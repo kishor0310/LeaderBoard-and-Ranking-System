@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NexusRank | High-Performance Real-Time Leaderboard & Ranking System</title>
+  <meta name="description" content="Production-grade real-time leaderboard engine using Max-Heap, Order Statistics Trees (Fenwick Tree), and Quick Select with voice assistant, live WebSocket simulation, and Light/Dark themes.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Ambient Glow Effects -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+
+  <!-- Header -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+          <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+          <path d="M4 22h16"/>
+          <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+          <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+          <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-title">NexusRank <span class="badge-pro">CORE ENGINE</span></span>
+        <span class="brand-subtitle">Heap Sort • Order Statistics • Quick Select</span>
+      </div>
+    </div>
+
+    <!-- Center Mode Selector -->
+    <div class="preset-selector-group">
+      <span class="selector-label">Arena Preset:</span>
+      <div class="segmented-control" id="presetSelector">
+        <button class="seg-btn active" data-preset="pubg">
+          <span class="preset-icon">🎮</span> PUBG Esports
+        </button>
+        <button class="seg-btn" data-preset="hackerrank">
+          <span class="preset-icon">💻</span> HackerRank Contest
+        </button>
+        <button class="seg-btn" data-preset="byjus">
+          <span class="preset-icon">🏆</span> BYJU'S Olympiad
+        </button>
+      </div>
+    </div>
+
+    <!-- Actions & Controls -->
+    <div class="nav-actions">
+      <!-- Voice Assistant Trigger Button -->
+      <button class="btn-voice" id="voiceToggleBtn" title="Activate Nexus Voice Assistant" aria-label="Toggle Voice Assistant">
+        <div class="voice-pulse-ring"></div>
+        <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+        </svg>
+        <span class="voice-btn-text">Voice AI</span>
+      </button>
+
+      <!-- Theme Switcher (Dark Mode to Light Mode) -->
+      <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle Light / Dark Mode" aria-label="Toggle Theme">
+        <div class="theme-icon-container">
+          <!-- Sun icon (for dark mode active, switch to light) -->
+          <svg class="theme-icon sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+          <!-- Moon icon (for light mode active, switch to dark) -->
+          <svg class="theme-icon moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </div>
+        <span class="theme-mode-label" id="themeLabel">Light Mode</span>
+      </button>
+
+      <!-- Live Stream Status Pill -->
+      <div class="stream-status-pill" id="streamPill">
+        <span class="pulsing-dot"></span>
+        <span class="stream-text" id="streamStatusText">WebSocket Live</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Voice Assistant Floating Drawer / Modal -->
+  <aside class="voice-assistant-panel" id="voiceAssistantPanel">
+    <div class="voice-panel-header">
+      <div class="voice-ai-avatar">
+        <div class="avatar-ring"></div>
+        <canvas id="voiceWaveCanvas" width="90" height="30"></canvas>
+      </div>
+      <div class="voice-ai-meta">
+        <h3>Nexus Voice Assistant</h3>
+        <p class="voice-status-line" id="voiceStatusLine">Ready • Click Mic or press [Space]</p>
+      </div>
+      <div class="voice-controls-mini">
+        <button class="icon-btn" id="ttsMuteBtn" title="Toggle AI Speech Audio">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="speaker-icon">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="closeVoicePanelBtn" title="Collapse Panel">✕</button>
+      </div>
+    </div>
+
+    <!-- Live Transcript Box -->
+    <div class="voice-transcript-box">
+      <div class="transcript-label">Transcribed Query:</div>
+      <div class="transcript-content" id="transcriptContent">"Speak a command like: 'Show top 10' or 'Find rank of ApexSniper'..."</div>
+    </div>
+
+    <!-- AI Response Box -->
+    <div class="voice-ai-response" id="voiceAiResponse">
+      <span class="ai-tag">AI Response</span>
+      <p id="voiceResponseText">Welcome to NexusRank! I can calculate player ranks in O(log n), execute Quick Select for kth rank, and simulate live score streams.</p>
+    </div>
+
+    <!-- Quick Command Chips -->
+    <div class="voice-chips-container">
+      <span class="chips-title">Suggested Voice Commands:</span>
+      <div class="chips-grid">
+        <button class="command-chip" data-cmd="show top 10">"Show top 10"</button>
+        <button class="command-chip" data-cmd="find rank of CipherKing">"Rank of CipherKing"</button>
+        <button class="command-chip" data-cmd="find score at rank 5">"Find 5th rank score (Quick Select)"</button>
+        <button class="command-chip" data-cmd="start simulation">"Start live match"</button>
+        <button class="command-chip" data-cmd="toggle theme">"Switch theme"</button>
+        <button class="command-chip" data-cmd="explain algorithms">"Explain Big-O bounds"</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Container -->
+  <main class="main-layout">
+    <!-- Top System Metrics Banner -->
+    <section class="metrics-ticker">
+      <div class="metric-card">
+        <div class="metric-icon">👥</div>
+        <div class="metric-info">
+          <span class="metric-title">Active Contestants</span>
+          <span class="metric-value" id="metricTotalPlayers">10,000</span>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">⚡</div>
+        <div class="metric-info">
+          <span class="metric-title">Throughput (Updates/sec)</span>
+          <span class="metric-value text-accent" id="metricThroughput">250 ops/s</span>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">⏱️</div>
+        <div class="metric-info">
+          <span class="metric-title">Rank Lookup Time</span>
+          <span class="metric-value text-success" id="metricRankLatency">&lt; 0.04 ms</span>
+          <span class="metric-badge">O(log N)</span>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">🎯</div>
+        <div class="metric-info">
+          <span class="metric-title">Top-K Heap Size</span>
+          <span class="metric-value" id="metricHeapSize">Top 10 Maintained</span>
+          <span class="metric-badge">O(log K)</span>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">🛡️</div>
+        <div class="metric-info">
+          <span class="metric-title">Concurrency Safety</span>
+          <span class="metric-value text-info" id="metricThreadSafety">Lock-Free Event Queue</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="app-tab-nav">
+      <button class="tab-btn active" data-tab="leaderboard">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        Live Dynamic Leaderboard
+      </button>
+      <button class="tab-btn" data-tab="heap-visualizer">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="m8.5 15.5 2-8M15.5 15.5l-2-8"/></svg>
+        Max-Heap & Priority Queue (Top-K)
+      </button>
+      <button class="tab-btn" data-tab="quick-select">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M11 8v6M8 11h6"/></svg>
+        Quick Select Interactive [O(n)]
+      </button>
+      <button class="tab-btn" data-tab="order-statistics">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Order Statistics Tree & Fenwick [O(log n)]
+      </button>
+      <button class="tab-btn" data-tab="architecture">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg>
+        MNC System Architecture & Code
+      </button>
+    </nav>
+
+    <!-- TAB 1: LIVE LEADERBOARD -->
+    <section class="tab-content active" id="tab-leaderboard">
+      <div class="leaderboard-grid">
+        <!-- Left: Leaderboard Table Card -->
+        <div class="card leaderboard-card">
+          <div class="card-header">
+            <div class="header-left">
+              <h2 class="card-title">Live Top Contestants</h2>
+              <p class="card-desc">Maintained in real-time via Max-Heap with instantaneous rank recalculation</p>
+            </div>
+            <div class="header-actions">
+              <div class="filter-box">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" id="playerSearchInput" placeholder="Filter leaderboard..." aria-label="Search players">
+              </div>
+              <div class="topk-dropdown">
+                <label for="topKSelect">Show:</label>
+                <select id="topKSelect" aria-label="Top K count">
+                  <option value="10" selected>Top 10</option>
+                  <option value="20">Top 20</option>
+                  <option value="50">Top 50</option>
+                  <option value="100">Top 100</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Podium for Top 3 -->
+          <div class="podium-section" id="podiumContainer">
+            <!-- Dynamically injected via JS -->
+          </div>
+
+          <!-- Table Content -->
+          <div class="table-responsive">
+            <table class="leaderboard-table" id="leaderboardTable">
+              <thead>
+                <tr>
+                  <th class="th-rank">Rank</th>
+                  <th class="th-player">Player / Handle</th>
+                  <th class="th-score">Score / Points</th>
+                  <th class="th-detail" id="customDetailHeader">Kills / AC</th>
+                  <th class="th-streak">Delta / Trend</th>
+                  <th class="th-percentile">Percentile</th>
+                  <th class="th-actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboardTbody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right: Real-Time Ops & Rank Finder -->
+        <div class="side-panel">
+          <!-- Rank Finder Instant Search Card -->
+          <div class="card rank-finder-card">
+            <div class="card-header-compact">
+              <span class="icon-tag">🔍</span>
+              <h3>Instant O(log n) Rank Finder</h3>
+            </div>
+            <p class="card-hint">Calculates exact global position among <strong>10,000+ active contestants</strong> instantly via Order Statistics.</p>
+
+            <div class="instant-search-form">
+              <div class="input-with-btn">
+                <input type="text" id="targetPlayerQuery" placeholder="Enter player name (e.g. ApexSniper)..." list="playerSuggestions">
+                <datalist id="playerSuggestions"></datalist>
+                <button class="btn btn-primary" id="btnFindRank">Search Rank</button>
+              </div>
+            </div>
+
+            <!-- Rank Result Modal/Box -->
+            <div class="rank-result-box" id="rankResultBox" style="display: none;">
+              <div class="result-player-header">
+                <div class="result-avatar" id="resAvatar">A</div>
+                <div class="result-meta">
+                  <h4 id="resPlayerName">ApexSniper</h4>
+                  <span class="player-tag" id="resPlayerTag">PRO SQUAD</span>
+                </div>
+                <div class="result-rank-badge" id="resRankBadge">#1</div>
+              </div>
+              <div class="result-stats-grid">
+                <div class="stat-item">
+                  <span class="stat-label">Current Score</span>
+                  <span class="stat-num" id="resScore">9,850</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Global Rank</span>
+                  <span class="stat-num text-success" id="resGlobalRank">1 / 10,000</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Percentile</span>
+                  <span class="stat-num text-accent" id="resPercentile">Top 0.01%</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Lookup Complexity</span>
+                  <span class="stat-num" id="resTimeComp">O(log 10,000)</span>
+                </div>
+              </div>
+              <!-- Visual path indicator -->
+              <div class="tree-path-trace" id="treePathTrace">
+                <span class="trace-title">Fenwick Tree Traversal Trace:</span>
+                <code class="trace-code" id="traceCode">query(Score 9850) -> cumulative sum bucket [9850..10000] = 0 higher -> Rank #1</code>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Operations Simulator -->
+          <div class="card op-simulator-card">
+            <div class="card-header-compact">
+              <span class="icon-tag">⚡</span>
+              <h3>Live Operations & Heap Mutator</h3>
+            </div>
+            
+            <div class="tabs-sub">
+              <button class="subtab-btn active" data-subtab="update">Update Score</button>
+              <button class="subtab-btn" data-subtab="insert">Insert Player</button>
+              <button class="subtab-btn" data-subtab="stress">Stress Test</button>
+            </div>
+
+            <!-- Subtab 1: Update -->
+            <div class="subtab-content active" id="subtab-update">
+              <div class="form-row">
+                <label>Player Handle:</label>
+                <select id="updatePlayerSelect" class="form-input"></select>
+              </div>
+              <div class="form-row">
+                <label>New Score (0 - 10,000):</label>
+                <div class="score-input-group">
+                  <input type="number" id="updateScoreInput" class="form-input" min="0" max="10000" value="8950">
+                  <button class="btn btn-secondary btn-sm" id="btnScorePlus500">+500</button>
+                  <button class="btn btn-secondary btn-sm" id="btnScoreMinus500">-500</button>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-block" id="btnExecuteScoreUpdate">
+                ⚡ Commit Score & Heapify (O(log K))
+              </button>
+            </div>
+
+            <!-- Subtab 2: Insert -->
+            <div class="subtab-content" id="subtab-insert">
+              <div class="form-row">
+                <label>New Player Name:</label>
+                <input type="text" id="insertPlayerName" class="form-input" placeholder="e.g. CyberValkyrie">
+              </div>
+              <div class="form-row">
+                <label>Initial Score:</label>
+                <input type="number" id="insertPlayerScore" class="form-input" min="0" max="10000" value="7500">
+              </div>
+              <button class="btn btn-accent btn-block" id="btnExecutePlayerInsert">
+                ➕ Insert to System & Update Fenwick
+              </button>
+            </div>
+
+            <!-- Subtab 3: Stress Test & Concurrency -->
+            <div class="subtab-content" id="subtab-stress">
+              <p class="text-muted text-xs">Simulates concurrent incoming scores (like a PUBG match end or LeetCode contest crunch).</p>
+              <div class="stream-controls">
+                <button class="btn btn-success" id="btnToggleLiveStream">▶ Start Live Match Stream</button>
+                <button class="btn btn-secondary" id="btnSimulateBurst">💥 1,000 Concurrent Updates</button>
+              </div>
+              <div class="stream-rate-slider">
+                <label>Stream Speed: <span id="streamRateVal">5 updates/sec</span></label>
+                <input type="range" id="streamSpeedRange" min="1" max="50" value="5">
+              </div>
+            </div>
+          </div>
+
+          <!-- Real-Time Event Stream Log -->
+          <div class="card event-log-card">
+            <div class="card-header-compact">
+              <span class="icon-tag">📡</span>
+              <h3>Simulated WebSocket Event Feed</h3>
+              <button class="btn-text-sm" id="btnClearLog">Clear</button>
+            </div>
+            <div class="event-feed-list" id="eventFeedList">
+              <!-- Dynamically populated events -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: MAX-HEAP & PRIORITY QUEUE VISUALIZER -->
+    <section class="tab-content" id="tab-heap-visualizer">
+      <div class="visualizer-container">
+        <div class="visualizer-header">
+          <div>
+            <h2>Top-K Max-Heap Visualizer</h2>
+            <p class="text-muted">Maintains the exact top-K players in $O(\log K)$ per update. Root always holds the maximum score.</p>
+          </div>
+          <div class="heap-controls">
+            <button class="btn btn-secondary" id="btnHeapExtractMax">Extract Max [O(log K)]</button>
+            <button class="btn btn-secondary" id="btnHeapInsertRandom">Insert Random Score</button>
+            <button class="btn btn-outline" id="btnHeapReset">Rebuild Heap</button>
+          </div>
+        </div>
+
+        <div class="heap-explanation-bar">
+          <div class="badge-tag">Parent(i) = ⌊(i - 1)/2⌋</div>
+          <div class="badge-tag">LeftChild(i) = 2i + 1</div>
+          <div class="badge-tag">RightChild(i) = 2i + 2</div>
+          <div class="badge-tag">Heap Invariant: Node ≥ Children</div>
+        </div>
+
+        <!-- Heap Tree Canvas/SVG Area -->
+        <div class="canvas-card">
+          <div class="canvas-title">Binary Heap Tree Structure</div>
+          <div class="heap-tree-wrapper" id="heapTreeWrapper">
+            <svg id="heapSvgCanvas" width="100%" height="340"></svg>
+          </div>
+          <div class="heap-status-banner" id="heapStatusBanner">
+            Max-Heap Property holds. Root is Rank #1 with highest score.
+          </div>
+        </div>
+
+        <!-- Heap Array Representation -->
+        <div class="card mt-4">
+          <div class="card-header-compact">
+            <h3>Sequential Array Representation in Memory</h3>
+            <span class="badge-tag">Zero-Indexed Array</span>
+          </div>
+          <div class="heap-array-view" id="heapArrayView">
+            <!-- Array items rendered here -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: QUICK SELECT ALGORITHM -->
+    <section class="tab-content" id="tab-quick-select">
+      <div class="quickselect-container">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Quick Select Playground: O(n) Average Time Complexity</h2>
+              <p class="text-muted">Find the <strong>k-th highest score</strong> without doing a full $O(n \log n)$ sort! Uses Hoare's selection algorithm via Lomuto partitioning.</p>
+            </div>
+            <div class="algo-badge-comparison">
+              <span class="badge-tag">Full Sort: O(n log n)</span>
+              <span class="badge-tag tag-highlight">Quick Select: O(n)</span>
+              <span class="badge-tag">Heap Select: O(n log k)</span>
+            </div>
+          </div>
+
+          <!-- Interactive Controls -->
+          <div class="qs-control-panel">
+            <div class="qs-input-group">
+              <label for="qsKInput">Find the Score at Rank (k):</label>
+              <div class="stepper-input">
+                <input type="number" id="qsKInput" min="1" max="15" value="4">
+                <span class="stepper-unit">th rank</span>
+              </div>
+            </div>
+            <div class="qs-actions">
+              <button class="btn btn-primary" id="btnRunQuickSelect">▶ Run Quick Select Step-by-Step</button>
+              <button class="btn btn-secondary" id="btnQsRandomize">🎲 Generate New Dataset</button>
+            </div>
+          </div>
+
+          <!-- Visual Partition Sandbox -->
+          <div class="qs-visual-sandbox">
+            <div class="qs-step-indicator" id="qsStepIndicator">
+              Ready to find the <strong>4th highest score</strong> among players.
+            </div>
+
+            <!-- Array Blocks Visualizer -->
+            <div class="qs-array-container" id="qsArrayContainer">
+              <!-- Dynamically populated array blocks -->
+            </div>
+
+            <!-- Steps Stepper / Controls -->
+            <div class="qs-step-controls">
+              <button class="btn btn-outline btn-sm" id="btnQsPrevStep" disabled>◀ Previous Step</button>
+              <span class="qs-step-counter" id="qsStepCounter">Step 0 of 0</span>
+              <button class="btn btn-outline btn-sm" id="btnQsNextStep" disabled>Next Step ▶</button>
+              <button class="btn btn-text-sm" id="btnQsPlayAuto">Auto Play</button>
+            </div>
+
+            <!-- Log of Partition Operations -->
+            <div class="qs-log-box" id="qsLogBox">
+              <div class="qs-log-entry">Hit 'Run Quick Select' to trace how the pivot partitions the scores into higher and lower subarrays.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: ORDER STATISTICS TREE & FENWICK -->
+    <section class="tab-content" id="tab-order-statistics">
+      <div class="order-stats-container">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Order Statistics & Fenwick Tree (Binary Indexed Tree)</h2>
+              <p class="text-muted">How MNCs like HackerRank and PUBG query exact ranks among millions of scores in strictly $O(\log M)$ time.</p>
+            </div>
+            <div class="header-tags">
+              <span class="badge-tag">Point Update: O(log M)</span>
+              <span class="badge-tag">Prefix/Suffix Query: O(log M)</span>
+              <span class="badge-tag">Space: O(M)</span>
+            </div>
+          </div>
+
+          <div class="theory-grid">
+            <div class="theory-card">
+              <h4>1. The Problem with Sorting</h4>
+              <p>Sorting 1,000,000 players takes $O(N \log N) \approx 20,000,000$ operations. Running this on every live kill or solved problem kills CPU performance.</p>
+            </div>
+            <div class="theory-card">
+              <h4>2. The Augmented Tree Approach</h4>
+              <p>An Order Statistics Tree stores subtree sizes in each node. `rank(x) = 1 + rightSubtreeSize + parentAncestors` in $O(\log N)$ time.</p>
+            </div>
+            <div class="theory-card">
+              <h4>3. The Fenwick / BIT Secret</h4>
+              <p>Discretize scores into buckets (0 to 10,000). To find rank of score $S$: `rank = 1 + querySum(S + 1, MAX_SCORE)`. Updates take just 14 bitwise jumps!</p>
+            </div>
+          </div>
+
+          <!-- Interactive Fenwick Score Distribution Visualizer -->
+          <div class="card mt-4">
+            <div class="card-header-compact">
+              <h3>Live Score Frequency Distribution & Bitwise Query Trace</h3>
+              <span class="badge-tag">Score Range: 0 - 10,000</span>
+            </div>
+            <div class="fenwick-canvas-wrapper">
+              <canvas id="fenwickChartCanvas" width="900" height="240"></canvas>
+            </div>
+            <div class="fenwick-tester">
+              <div class="tester-inputs">
+                <label>Test any score to compute instant rank:</label>
+                <input type="number" id="testFenwickScore" min="0" max="10000" value="8450">
+                <button class="btn btn-primary" id="btnTestFenwick">Calculate Rank via Fenwick</button>
+              </div>
+              <div class="tester-output" id="fenwickOutputBox">
+                Score 8,450: <strong>Rank #124</strong> among 10,000 players (Higher scores: 123 | Percentile: Top 1.24%). Calculated in 0.012 ms!
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: MNC ARCHITECTURE & PRODUCTION CODE -->
+    <section class="tab-content" id="tab-architecture">
+      <div class="architecture-container">
+        <!-- Top Comparison Cards -->
+        <div class="m-grid-2">
+          <div class="card">
+            <div class="card-header-compact">
+              <span class="icon-tag">🏛️</span>
+              <h3>System Design: PUBG / HackerRank Leaderboard Architecture</h3>
+            </div>
+            <div class="arch-diagram">
+              <div class="arch-box client">Clients / Match Engine (Millions)</div>
+              <div class="arch-arrow">⬇ WebSocket Score Deltas</div>
+              <div class="arch-box broker">Kafka / Redis Event Stream</div>
+              <div class="arch-arrow">⬇ Event Ingestion</div>
+              <div class="arch-box core">
+                <strong>Nexus Ranking Worker</strong><br>
+                1. Top-K Max-Heap in RAM (Instant Top-10 / Top-100)<br>
+                2. Fenwick Tree / Segment Tree (O(log N) Global Rank)<br>
+                3. Redis ZSET (Persistent Distributed Cache)
+              </div>
+              <div class="arch-arrow">⬇ Push Broadcast</div>
+              <div class="arch-box ui">Live Web / Mobile Clients</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header-compact">
+              <span class="icon-tag">📊</span>
+              <h3>Complexity Trade-off Matrix</h3>
+            </div>
+            <table class="complexity-table">
+              <thead>
+                <tr>
+                  <th>Algorithm / Structure</th>
+                  <th>Insert / Update</th>
+                  <th>Get Top-K</th>
+                  <th>Get Rank of X</th>
+                  <th>Find Kth Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Naive Array Sort</strong></td>
+                  <td><span class="badge-red">O(N log N)</span></td>
+                  <td>O(1)</td>
+                  <td>O(N)</td>
+                  <td>O(N log N)</td>
+                </tr>
+                <tr>
+                  <td><strong>Max-Heap (Top-K)</strong></td>
+                  <td><span class="badge-green">O(log K)</span></td>
+                  <td><span class="badge-green">O(1)</span></td>
+                  <td>O(N)</td>
+                  <td>O(K log K)</td>
+                </tr>
+                <tr>
+                  <td><strong>Quick Select</strong></td>
+                  <td>-</td>
+                  <td>-</td>
+                  <td>-</td>
+                  <td><span class="badge-green">O(N) avg</span></td>
+                </tr>
+                <tr class="row-highlight">
+                  <td><strong>Nexus Hybrid (Heap + Fenwick)</strong></td>
+                  <td><span class="badge-green">O(log K + log M)</span></td>
+                  <td><span class="badge-green">O(1)</span></td>
+                  <td><span class="badge-green">O(log M)</span></td>
+                  <td><span class="badge-green">O(log M)</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Production Code Showcase -->
+        <div class="card mt-4">
+          <div class="card-header">
+            <div>
+              <h3>Production Code Implementations (Interview & MNC Grade)</h3>
+              <p class="text-muted">Ready-to-use C++, Java, and Redis solutions for Top-K and Order Statistics</p>
+            </div>
+            <div class="code-lang-selector" id="codeLangSelector">
+              <button class="code-tab active" data-lang="cpp">C++ (pb_ds ordered_set)</button>
+              <button class="code-tab" data-lang="java">Java (TreeMap + Heap)</button>
+              <button class="code-tab" data-lang="redis">Redis (ZADD / ZREVRANK)</button>
+              <button class="code-tab" data-lang="js">JavaScript (Fenwick Tree)</button>
+            </div>
+          </div>
+          <div class="code-container">
+            <pre><code id="codeDisplayArea" class="language-code">
+// Loading snippet...
+            </code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Notification Toast -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script src="js/algorithms/heap.js"></script>
+  <script src="js/algorithms/order-statistics.js"></script>
+  <script src="js/algorithms/quick-select.js"></script>
+  <script src="js/presets.js"></script>
+  <script src="js/voice-assistant.js"></script>
+  <script src="js/simulation.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
